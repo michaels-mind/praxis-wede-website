@@ -55,8 +55,8 @@ export default function AdminVacationsPage() {
               <li key={vac.id} className="admin-list-item">
                 <h2 className="admin-list-title">{vac.title}</h2>
                 <p className="admin-list-text">
-                  Zeitraum: {vac.startdate} bis {vac.enddate}
-                </p>
+  Zeitraum: {vac.start_date} bis {vac.end_date}
+</p>
                 {vac.notes && (
                   <p className="admin-list-text">{vac.notes}</p>
                 )}

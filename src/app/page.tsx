@@ -162,7 +162,7 @@ export default async function HomePage() {
               <li key={vacation.id} className="vacation-item">
                 <p className="vacation-title">{vacation.title}</p>
                 <p className="vacation-dates">
-                  {vacation.startdate} bis {vacation.enddate}
+                  {vacation.start_date} bis {vacation.end_date}
                 </p>
                 {vacation.notes && (
                   <p className="vacation-notes">{vacation.notes}</p>
