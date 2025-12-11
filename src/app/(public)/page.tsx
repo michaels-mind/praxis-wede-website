@@ -1,27 +1,39 @@
-// src/app/page.tsx
+﻿// src/app/page.tsx
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import {
   getOpeningHours,
   getAnnouncements,
-  getActiveVacations,
-} from './lib/queries';
-import { formatTime, getWeekdayName } from './lib/utils';
+  getVacations,
+} from '../lib/admin';
+
+
 
 export const metadata: Metadata = {
-  title: 'Praxis Andreas Wede – Ihre Hausarztpraxis in Nienburg/Weser',
+  title: 'Praxis Andreas Wede â€“ Ihre Hausarztpraxis in Nienburg/Weser',
   description:
-    'Hausarztpraxis Dr. Andreas Wede in Nienburg/Weser: Menschliche hausärztliche Versorgung, lange Erfahrung, Suchtmedizin und persönliche Betreuung.',
+    'Hausarztpraxis Dr. Andreas Wede in Nienburg/Weser: Menschliche hausÃ¤rztliche Versorgung, lange Erfahrung, Suchtmedizin und persÃ¶nliche Betreuung.',
 };
 
 export default async function HomePage() {
-  const [openingHours, announcements, activeVacations] = await Promise.all([
+  const [openingHours, announcements, allVacations] = await Promise.all([
     getOpeningHours(),
     getAnnouncements(),
-    getActiveVacations(),
+    getVacations(),
   ]);
 
-  const hasAnnouncements = announcements.length > 0;
+  // Filter aktive AnkÃ¼ndigungen (nur die mit isactive=true und innerhalb des Datums)
+  const today = new Date().toISOString().split('T')[0];
+  const activeAnnouncements = announcements.filter(
+    (a) => a.isactive && a.startdate <= today && a.enddate >= today
+  );
+
+  // Filter aktive Urlaube (nur zukÃ¼nftige/aktuelle)
+  const activeVacations = allVacations.filter(
+    (v) => v.isactive && v.enddate >= today
+  );
+
+  const hasAnnouncements = activeAnnouncements.length > 0;
   const hasActiveVacations = activeVacations.length > 0;
 
   return (
@@ -33,13 +45,13 @@ export default async function HomePage() {
             Ihre Hausarztpraxis in Nienburg/Weser
           </h1>
           <p className="home-hero-text">
-            In der Praxis von Dr. Andreas Wede stehen eine verlässliche
-            hausärztliche Versorgung, langjährige Erfahrung und eine persönliche
+            In der Praxis von Dr. Andreas Wede stehen eine verlÃ¤ssliche
+            hausÃ¤rztliche Versorgung, langjÃ¤hrige Erfahrung und eine persÃ¶nliche
             Betreuung im Mittelpunkt.
           </p>
           <p className="home-hero-text">
             Wir begleiten Sie und Ihre Familie bei akuten Beschwerden und
-            chronischen Erkrankungen – von der Vorsorge bis zur langfristigen
+            chronischen Erkrankungen â€“ von der Vorsorge bis zur langfristigen
             Behandlung.
           </p>
 
@@ -66,7 +78,7 @@ export default async function HomePage() {
       </section>
 
       {/* Drei Info-Karten */}
-      <section aria-label="Überblick" className="home-section home-section-cards">
+      <section aria-label="Ãœberblick" className="home-section home-section-cards">
         <article className="home-info-card">
           <div className="home-info-card-icon">
             <Image
@@ -99,8 +111,8 @@ export default async function HomePage() {
           </div>
           <h2 className="home-info-card-title">Leistungen</h2>
           <p className="home-info-card-text">
-            Hausärztliche Versorgung, Vorsorge, Suchtmedizin und
-            palliativmedizinische Betreuung – kompakt erklärt.
+            HausÃ¤rztliche Versorgung, Vorsorge, Suchtmedizin und
+            palliativmedizinische Betreuung â€“ kompakt erklÃ¤rt.
           </p>
           <a href="/leistungen" className="home-contact-link">
             Leistungen ansehen
@@ -138,7 +150,7 @@ export default async function HomePage() {
             Aktuelle Hinweise
           </h2>
           <ul className="announcement-list">
-            {announcements.map((item) => (
+            {activeAnnouncements.map((item) => (
               <li key={item.id} className="announcement-item">
                 <h3 className="announcement-title">{item.title}</h3>
                 <p className="announcement-content">{item.content}</p>
@@ -160,12 +172,14 @@ export default async function HomePage() {
           <ul className="vacation-list">
             {activeVacations.map((vacation) => (
               <li key={vacation.id} className="vacation-item">
-                <p className="vacation-title">{vacation.title}</p>
-                <p className="vacation-dates">
-                  {vacation.start_date} bis {vacation.end_date}
+                <p className="vacation-title">
+                  {vacation.description || 'Praxis geschlossen'}
                 </p>
-                {vacation.notes && (
-                  <p className="vacation-notes">{vacation.notes}</p>
+                <p className="vacation-dates">
+                  {vacation.startdate} bis {vacation.enddate}
+                </p>
+                {vacation.emergencycontact && (
+                  <p className="vacation-notes">{vacation.emergencycontact}</p>
                 )}
               </li>
             ))}
@@ -184,8 +198,8 @@ export default async function HomePage() {
             Sprechzeiten
           </h2>
           <p className="home-note">
-            Bitte vereinbaren Sie Ihre Termine möglichst telefonisch. So können
-            wir Wartezeiten besser planen und Ihnen genügend Zeit einräumen.
+            Bitte vereinbaren Sie Ihre Termine mÃ¶glichst telefonisch. So kÃ¶nnen
+            wir Wartezeiten besser planen und Ihnen genÃ¼gend Zeit einrÃ¤umen.
           </p>
 
           <table className="opening-hours-table">
@@ -197,36 +211,35 @@ export default async function HomePage() {
               </tr>
             </thead>
             <tbody>
-              {openingHours.map((row) => (
-                <tr key={row.id}>
-                  <th scope="row">{getWeekdayName(row.weekday)}</th>
-                  <td>
-                    {row.is_closed || !row.morning_from || !row.morning_to
-                      ? '–'
-                      : `${formatTime(row.morning_from)}–${formatTime(
-                          row.morning_to,
-                        )}`}
-                  </td>
-                  <td>
-                    {row.is_closed || !row.afternoon_from || !row.afternoon_to
-                      ? '–'
-                      : `${formatTime(row.afternoon_from)}–${formatTime(
-                          row.afternoon_to,
-                        )}`}
-                  </td>
-                </tr>
-              ))}
+              {openingHours.map((row) => {
+                const days = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+                return (
+                  <tr key={row.id}>
+                    <th scope="row">{days[row.dayofweek]}</th>
+                    <td>
+                      {row.isclosed || !row.morningstart || !row.morningend
+                        ? 'â€“'
+                        : `${row.morningstart.slice(0, 5)}â€“${row.morningend.slice(0, 5)}`}
+                    </td>
+                    <td>
+                      {row.isclosed || !row.afternoonstart || !row.afternoonend
+                        ? 'â€“'
+                        : `${row.afternoonstart.slice(0, 5)}â€“${row.afternoonend.slice(0, 5)}`}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
 
           <p className="home-note">
-            In dringenden Fällen melden Sie sich bitte telefonisch, damit wir
-            gemeinsam das weitere Vorgehen abstimmen können.
+            In dringenden FÃ¤llen melden Sie sich bitte telefonisch, damit wir
+            gemeinsam das weitere Vorgehen abstimmen kÃ¶nnen.
           </p>
         </div>
 
         <div className="home-contact-card">
-          <h2 className="home-section-title">Kontakt und Notfälle</h2>
+          <h2 className="home-section-title">Kontakt und NotfÃ¤lle</h2>
           <p>
             Telefon:{' '}
             <a href="tel:+495021000000" className="home-contact-link">
@@ -236,20 +249,20 @@ export default async function HomePage() {
           <p>
             Adresse:
             <br />
-            XYZ-Straße 1
+            XYZ-StraÃŸe 1
             <br />
             31582 Nienburg/Weser
           </p>
           <p>
-            Für nicht dringende Anfragen können Sie auch unsere{' '}
+            FÃ¼r nicht dringende Anfragen kÃ¶nnen Sie auch unsere{' '}
             <a href="/kontakt" className="home-contact-link">
               Kontaktseite
             </a>{' '}
             nutzen.
           </p>
           <p className="home-note">
-            In lebensbedrohlichen Notfällen wählen Sie bitte den Notruf 112.
-            Außerhalb unserer Sprechzeiten erreichen Sie den ärztlichen
+            In lebensbedrohlichen NotfÃ¤llen wÃ¤hlen Sie bitte den Notruf 112.
+            AuÃŸerhalb unserer Sprechzeiten erreichen Sie den Ã¤rztlichen
             Bereitschaftsdienst unter der Telefonnummer 116 117.
           </p>
         </div>

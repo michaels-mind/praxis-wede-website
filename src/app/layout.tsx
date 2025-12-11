@@ -1,5 +1,6 @@
 // src/app/layout.tsx
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -24,12 +25,12 @@ export default function RootLayout({
         <div className="site-shell">
           <header className="site-header">
             <div className="site-header-inner">
-              <a href="/" className="site-brand">
+              <Link href="/" className="site-brand">
                 <span className="site-brand-title">Praxis Andreas Wede</span>
                 <span className="site-brand-subtitle">
                   Hausarztpraxis in Nienburg/Weser
                 </span>
-              </a>
+              </Link>
 
               <nav
                 className="main-nav"
@@ -38,29 +39,29 @@ export default function RootLayout({
               >
                 <ul className="main-nav-list">
                   <li>
-                    <a href="/" className="main-nav-link">
+                    <Link href="/" className="main-nav-link">
                       Startseite
-                    </a>
+                    </Link>
                   </li>
                   <li>
-                    <a href="/leistungen" className="main-nav-link">
+                    <Link href="/leistungen" className="main-nav-link">
                       Leistungen
-                    </a>
+                    </Link>
                   </li>
                   <li>
-                    <a href="/praxis" className="main-nav-link">
+                    <Link href="/praxis" className="main-nav-link">
                       Praxis
-                    </a>
+                    </Link>
                   </li>
                   <li>
-                    <a href="/kontakt" className="main-nav-link">
+                    <Link href="/kontakt" className="main-nav-link">
                       Kontakt
-                    </a>
+                    </Link>
                   </li>
                   <li>
-                    <a href="/downloads" className="main-nav-link">
+                    <Link href="/downloads" className="main-nav-link">
                       Downloads
-                    </a>
+                    </Link>
                   </li>
                 </ul>
               </nav>
@@ -81,17 +82,18 @@ export default function RootLayout({
                   31582 Nienburg/Weser
                 </p>
                 <p>
-                  Telefon: <a href="tel:+495021000000">+49 (0)5021 000000</a>
+                  Telefon:{' '}
+                  <a href="tel:+495021000000">+49 (0)5021 000000</a>
                 </p>
               </div>
 
               <div className="site-footer-links">
-                <a href="/impressum" className="footer-link">
+                <Link href="/impressum" className="footer-link">
                   Impressum
-                </a>
-                <a href="/datenschutz" className="footer-link">
+                </Link>
+                <Link href="/datenschutz" className="footer-link">
                   Datenschutz
-                </a>
+                </Link>
               </div>
             </div>
           </footer>
