@@ -48,7 +48,7 @@ export default function KontaktForm() {
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
-    const nameError = validateRequired(formData.name, 'Name');
+    const nameError = validateRequired(formData.name);
     if (nameError) newErrors.name = nameError;
 
     const emailError = validateEmail(formData.email);
