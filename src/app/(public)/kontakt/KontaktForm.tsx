@@ -59,7 +59,7 @@ export default function KontaktForm() {
       if (phoneError) newErrors.phone = phoneError;
     }
 
-    const messageError = validateRequired(formData.message, 'Nachricht');
+    const messageError = validateRequired(formData.message);
     if (messageError) newErrors.message = messageError;
 
     setErrors(newErrors);
