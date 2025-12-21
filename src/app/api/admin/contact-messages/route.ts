@@ -1,4 +1,3 @@
-// app/api/admin/contact-messages/route.ts
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -24,8 +23,9 @@ export async function GET(request: Request) {
 
     if (error) throw error;
     return Response.json({ success: true, data });
-  } catch (error: any) {
-    return Response.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return Response.json({ error: message }, { status: 500 });
   }
 }
 
@@ -45,7 +45,8 @@ export async function PUT(request: Request) {
 
     if (error) throw error;
     return Response.json({ success: true, data });
-  } catch (error: any) {
-    return Response.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return Response.json({ error: message }, { status: 500 });
   }
 }

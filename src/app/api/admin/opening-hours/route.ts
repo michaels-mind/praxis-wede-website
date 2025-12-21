@@ -1,4 +1,3 @@
-// app/api/admin/opening-hours/route.ts
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
 
@@ -10,14 +9,15 @@ const supabase = createClient(
 export async function GET() {
   try {
     const { data, error } = await supabase
-      .from('opening_hours')
+      .from('openinghours')
       .select('*')
-      .order('day_of_week', { ascending: true });
+      .order('id', { ascending: true });
 
     if (error) throw error;
     return Response.json({ success: true, data });
-  } catch (error: any) {
-    return Response.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return Response.json({ error: message }, { status: 500 });
   }
 }
 
@@ -26,17 +26,17 @@ export async function POST(request: Request) {
     const body = await request.json();
 
     const { data, error } = await supabase
-      .from('opening_hours')
+      .from('openinghours')
       .insert([body]);
 
     if (error) throw error;
 
-    // 🎯 WICHTIG: Revalidiere die Home-Page!
     revalidatePath('/');
 
     return Response.json({ success: true, data });
-  } catch (error: any) {
-    return Response.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return Response.json({ error: message }, { status: 500 });
   }
 }
 
@@ -46,19 +46,19 @@ export async function PUT(request: Request) {
     const { id, ...updates } = body;
 
     const { data, error } = await supabase
-      .from('opening_hours')
+      .from('openinghours')
       .update(updates)
       .eq('id', id)
       .select();
 
     if (error) throw error;
 
-    // 🎯 Revalidiere nach dem Update
     revalidatePath('/');
 
     return Response.json({ success: true, data });
-  } catch (error: any) {
-    return Response.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return Response.json({ error: message }, { status: 500 });
   }
 }
 
@@ -67,17 +67,17 @@ export async function DELETE(request: Request) {
     const { id } = await request.json();
 
     const { error } = await supabase
-      .from('opening_hours')
+      .from('openinghours')
       .delete()
       .eq('id', id);
 
     if (error) throw error;
 
-    // 🎯 Revalidiere nach dem Löschen
     revalidatePath('/');
 
     return Response.json({ success: true });
-  } catch (error: any) {
-    return Response.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return Response.json({ error: message }, { status: 500 });
   }
 }
