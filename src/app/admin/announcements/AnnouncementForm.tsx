@@ -1,7 +1,6 @@
 ﻿'use client';
 
 import { useState } from 'react';
-import { createAnnouncement } from '@/lib/admin';
 
 interface AnnouncementFormProps {
   onSuccess: () => void;
@@ -10,33 +9,51 @@ interface AnnouncementFormProps {
 export function AnnouncementForm({ onSuccess }: AnnouncementFormProps) {
   const [formData, setFormData] = useState({
     title: '',
-    content: '',
-    start_date: '',
-    end_date: '',
+    description: '', // ✅ WICHTIG: description statt content
+    valid_from: '',
+    valid_until: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.title || !formData.content) {
+    if (!formData.title || !formData.description) {
       alert('Titel und Beschreibung sind erforderlich');
       return;
     }
 
     setIsSubmitting(true);
     try {
-      await createAnnouncement(formData);
+      // ✅ WICHTIG: Rufe die API-Route auf statt lib/admin direkt
+      const response = await fetch('/api/admin/announcements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: formData.title,
+          description: formData.description,
+          valid_from: formData.valid_from || null,
+          valid_until: formData.valid_until || null,
+          is_active: true,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Fehler beim Speichern');
+      }
+
       setFormData({
         title: '',
-        content: '',
-        start_date: '',
-        end_date: '',
+        description: '',
+        valid_from: '',
+        valid_until: '',
       });
+
+      alert('✅ Ankündigung erstellt! Die Website wird aktualisiert...');
       onSuccess();
     } catch (error) {
       console.error('Create error:', error);
-      alert('Fehler beim Erstellen');
+      alert('❌ Fehler beim Erstellen');
     } finally {
       setIsSubmitting(false);
     }
@@ -61,14 +78,14 @@ export function AnnouncementForm({ onSuccess }: AnnouncementFormProps) {
       </div>
 
       <div>
-        <label htmlFor="content" className="form-label">
+        <label htmlFor="description" className="form-label">
           Beschreibung *
         </label>
         <textarea
-          id="content"
-          value={formData.content}
+          id="description"
+          value={formData.description}
           onChange={(e) =>
-            setFormData({ ...formData, content: e.target.value })
+            setFormData({ ...formData, description: e.target.value })
           }
           className="form-input w-full min-h-[120px]"
           rows={4}
@@ -78,30 +95,30 @@ export function AnnouncementForm({ onSuccess }: AnnouncementFormProps) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label htmlFor="start_date" className="form-label">
+          <label htmlFor="valid_from" className="form-label">
             Gültig von (optional)
           </label>
           <input
             type="date"
-            id="start_date"
-            value={formData.start_date}
+            id="valid_from"
+            value={formData.valid_from}
             onChange={(e) =>
-              setFormData({ ...formData, start_date: e.target.value })
+              setFormData({ ...formData, valid_from: e.target.value })
             }
             className="form-input w-full"
           />
         </div>
 
         <div>
-          <label htmlFor="end_date" className="form-label">
+          <label htmlFor="valid_until" className="form-label">
             Gültig bis (optional)
           </label>
           <input
             type="date"
-            id="end_date"
-            value={formData.end_date}
+            id="valid_until"
+            value={formData.valid_until}
             onChange={(e) =>
-              setFormData({ ...formData, end_date: e.target.value })
+              setFormData({ ...formData, valid_until: e.target.value })
             }
             className="form-input w-full"
           />
