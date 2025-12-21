@@ -1,7 +1,6 @@
 ﻿'use client';
 
 import { useState } from 'react';
-import { createVacation } from '@/lib/admin';
 
 interface VacationFormProps {
   onSuccess: () => void;
@@ -11,14 +10,14 @@ export function VacationForm({ onSuccess }: VacationFormProps) {
   const [formData, setFormData] = useState({
     start_date: '',
     end_date: '',
-    description: '',
+    reason: '', // 🎯 GEÄNDERT: description -> reason
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.start_date || !formData.end_date || !formData.description) {
+    if (!formData.start_date || !formData.end_date || !formData.reason) {
       alert('Alle Felder sind erforderlich');
       return;
     }
@@ -30,12 +29,27 @@ export function VacationForm({ onSuccess }: VacationFormProps) {
 
     setIsSubmitting(true);
     try {
-      await createVacation(formData);
-      setFormData({ start_date: '', end_date: '', description: '' });
+      // 🎯 WICHTIG: Rufe die API-Route auf statt lib/admin direkt
+      const response = await fetch('/api/admin/vacations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          start_date: formData.start_date,
+          end_date: formData.end_date,
+          reason: formData.reason,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Fehler beim Speichern');
+      }
+
+      setFormData({ start_date: '', end_date: '', reason: '' });
+      alert('✅ Urlaub hinzugefügt! Die Website wird aktualisiert...');
       onSuccess();
     } catch (error) {
       console.error('Create error:', error);
-      alert('Fehler beim Erstellen');
+      alert('❌ Fehler beim Erstellen');
     } finally {
       setIsSubmitting(false);
     }
@@ -78,16 +92,16 @@ export function VacationForm({ onSuccess }: VacationFormProps) {
       </div>
 
       <div>
-        <label htmlFor="description" className="form-label">
+        <label htmlFor="reason" className="form-label">
           Grund *
         </label>
         <input
           type="text"
-          id="description"
-          value={formData.description}
+          id="reason"
+          value={formData.reason}
           placeholder="z.B. Weihnachtsferien, Betriebsurlaub"
           onChange={(e) =>
-            setFormData({ ...formData, description: e.target.value })
+            setFormData({ ...formData, reason: e.target.value })
           }
           className="form-input w-full"
           required

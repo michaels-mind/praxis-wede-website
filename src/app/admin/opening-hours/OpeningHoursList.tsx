@@ -1,7 +1,6 @@
 ﻿'use client';
 
 import { useState, useEffect } from 'react';
-import { getOpeningHours, updateOpeningHours } from '@/lib/admin';
 
 interface OpeningHour {
   id: string;
@@ -36,9 +35,17 @@ export function OpeningHoursList() {
 
   const loadHours = async () => {
     setLoading(true);
-    const data = await getOpeningHours();
-    setHours(data || []);
-    setLoading(false);
+    try {
+      // 🎯 WICHTIG: Rufe die API-Route auf statt lib/admin direkt
+      const response = await fetch('/api/admin/opening-hours');
+      const result = await response.json();
+      setHours(result.data || []);
+    } catch (error) {
+      console.error('Load error:', error);
+      setHours([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const startEdit = (hour: OpeningHour) => {
@@ -57,16 +64,28 @@ export function OpeningHoursList() {
 
   const saveEdit = async (id: string) => {
     try {
-      await updateOpeningHours(id, {
-        open_time: editData.open_time,
-        close_time: editData.close_time,
-        is_open: editData.is_open,
+      // 🎯 WICHTIG: Rufe die API-Route auf statt lib/admin direkt
+      const response = await fetch('/api/admin/opening-hours', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id,
+          open_time: editData.open_time,
+          close_time: editData.close_time,
+          is_open: editData.is_open,
+        }),
       });
+
+      if (!response.ok) {
+        throw new Error('Fehler beim Speichern');
+      }
+
+      alert('✅ Öffnungszeiten aktualisiert! Die Website wird aktualisiert...');
       await loadHours();
       cancelEdit();
     } catch (error) {
       console.error('Update error:', error);
-      alert('Fehler beim Speichern');
+      alert('❌ Fehler beim Speichern');
     }
   };
 

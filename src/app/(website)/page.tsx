@@ -1,3 +1,5 @@
+export const revalidate = 3600; // Revalidiere nach 1 Stunde als Fallback
+
 import Link from 'next/link';
 import { getAnnouncements, getOpeningHours, getVacations } from '@/lib/admin';
 import BookingButton from '@/components/medatixx/BookingButton'; 

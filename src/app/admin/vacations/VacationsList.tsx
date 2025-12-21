@@ -1,7 +1,6 @@
 ﻿'use client';
 
 import { useState, useEffect } from 'react';
-import { getVacations, deleteVacation } from '@/lib/admin';
 
 interface Vacation {
   id: string;
@@ -21,20 +20,39 @@ export function VacationsList() {
 
   const loadVacations = async () => {
     setLoading(true);
-    const data = await getVacations();
-    setVacations(data || []);
-    setLoading(false);
+    try {
+      // 🎯 WICHTIG: Rufe die API-Route auf statt lib/admin direkt
+      const response = await fetch('/api/admin/vacations');
+      const result = await response.json();
+      setVacations(result.data || []);
+    } catch (error) {
+      console.error('Load error:', error);
+      setVacations([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Urlaub wirklich löschen?')) return;
 
     try {
-      await deleteVacation(id);
+      // 🎯 WICHTIG: Rufe die API-Route auf statt lib/admin direkt
+      const response = await fetch('/api/admin/vacations', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Fehler beim Löschen');
+      }
+
+      alert('✅ Urlaub gelöscht! Die Website wird aktualisiert...');
       await loadVacations();
     } catch (error) {
       console.error('Delete error:', error);
-      alert('Fehler beim Löschen');
+      alert('❌ Fehler beim Löschen');
     }
   };
 
@@ -111,8 +129,7 @@ export function VacationsList() {
             )}
 
             <p className="text-sm text-gray-800 mb-4">
-              <span className="font-semibold">Grund:</span>{' '}
-              {vacation.reason}
+              <span className="font-semibold">Grund:</span> {vacation.reason}
             </p>
 
             <button

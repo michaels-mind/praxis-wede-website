@@ -1,7 +1,6 @@
 ﻿'use client';
 
 import { useState, useEffect } from 'react';
-import { getAnnouncements, deleteAnnouncement } from '@/lib/admin';
 
 interface Announcement {
   id: string;
@@ -22,20 +21,39 @@ export function AnnouncementsList() {
 
   const loadAnnouncements = async () => {
     setLoading(true);
-    const data = await getAnnouncements();
-    setAnnouncements(data || []);
-    setLoading(false);
+    try {
+      // 🎯 WICHTIG: Rufe die API-Route auf statt lib/admin direkt
+      const response = await fetch('/api/admin/announcements');
+      const result = await response.json();
+      setAnnouncements(result.data || []);
+    } catch (error) {
+      console.error('Load error:', error);
+      setAnnouncements([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Ankündigung wirklich löschen?')) return;
 
     try {
-      await deleteAnnouncement(id);
+      // 🎯 WICHTIG: Rufe die API-Route auf statt lib/admin direkt
+      const response = await fetch('/api/admin/announcements', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Fehler beim Löschen');
+      }
+
+      alert('✅ Ankündigung gelöscht! Die Website wird aktualisiert...');
       await loadAnnouncements();
     } catch (error) {
       console.error('Delete error:', error);
-      alert('Fehler beim Löschen');
+      alert('❌ Fehler beim Löschen');
     }
   };
 

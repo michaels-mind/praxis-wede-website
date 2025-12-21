@@ -8,6 +8,7 @@ export async function getAnnouncements() {
   const { data, error } = await supabase
     .from('announcements')
     .select('*')
+    .eq('is_active', true) // 🎯 WICHTIG: Nur aktive Ankündigungen
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -19,13 +20,22 @@ export async function getAnnouncements() {
 
 export async function createAnnouncement(announcement: {
   title: string;
-  content: string;
-  start_date?: string;
-  end_date?: string;
+  description: string; // 🎯 GEÄNDERT: content -> description
+  valid_from?: string | null; // 🎯 GEÄNDERT: start_date -> valid_from
+  valid_until?: string | null; // 🎯 GEÄNDERT: end_date -> valid_until
+  is_active?: boolean;
 }) {
   const { data, error } = await supabase
     .from('announcements')
-    .insert([announcement])
+    .insert([
+      {
+        title: announcement.title,
+        description: announcement.description,
+        valid_from: announcement.valid_from || null,
+        valid_until: announcement.valid_until || null,
+        is_active: announcement.is_active ?? true,
+      },
+    ])
     .select();
 
   if (error) throw error;
@@ -36,14 +46,25 @@ export async function updateAnnouncement(
   id: string,
   announcement: Partial<{
     title: string;
-    content: string;
-    start_date: string;
-    end_date: string;
+    description: string; // 🎯 GEÄNDERT: content -> description
+    valid_from: string;
+    valid_until: string;
+    is_active: boolean;
   }>,
 ) {
+  const payload: any = {};
+
+  if (announcement.title) payload.title = announcement.title;
+  if (announcement.description) payload.description = announcement.description;
+  if (announcement.valid_from !== undefined)
+    payload.valid_from = announcement.valid_from;
+  if (announcement.valid_until !== undefined)
+    payload.valid_until = announcement.valid_until;
+  if (announcement.is_active !== undefined) payload.is_active = announcement.is_active;
+
   const { data, error } = await supabase
     .from('announcements')
-    .update(announcement)
+    .update(payload)
     .eq('id', id)
     .select();
 
@@ -52,10 +73,7 @@ export async function updateAnnouncement(
 }
 
 export async function deleteAnnouncement(id: string) {
-  const { error } = await supabase
-    .from('announcements')
-    .delete()
-    .eq('id', id);
+  const { error } = await supabase.from('announcements').delete().eq('id', id);
 
   if (error) throw error;
 }
@@ -147,7 +165,7 @@ export async function getVacations() {
 export async function createVacation(vacation: {
   start_date: string;
   end_date: string;
-  description: string;
+  reason: string; // 🎯 HINWEIS: Du verwendest "reason" in der HomePage
 }) {
   const { data, error } = await supabase
     .from('vacations')
