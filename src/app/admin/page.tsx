@@ -21,7 +21,6 @@ export default function AdminDashboard() {
             value={12}
             icon="📧"
             color="primary"
-            className="group-hover:shadow-2xl group-hover:shadow-blue-500/25 group-hover:-translate-y-2 group-hover:border-blue-200 transition-all duration-300 h-full border border-gray-100 hover:border-blue-200 bg-white/80 backdrop-blur-sm"
           />
         </Link>
 
@@ -31,7 +30,6 @@ export default function AdminDashboard() {
             value={3}
             icon="📢"
             color="accent"
-            className="group-hover:shadow-2xl group-hover:shadow-emerald-500/25 group-hover:-translate-y-2 group-hover:border-emerald-200 transition-all duration-300 h-full border border-gray-100 hover:border-emerald-200 bg-white/80 backdrop-blur-sm"
           />
         </Link>
 
@@ -41,7 +39,6 @@ export default function AdminDashboard() {
             value={7}
             icon="🕒"
             color="success"
-            className="group-hover:shadow-2xl group-hover:shadow-green-500/25 group-hover:-translate-y-2 group-hover:border-green-200 transition-all duration-300 h-full border border-gray-100 hover:border-green-200 bg-white/80 backdrop-blur-sm"
           />
         </Link>
 
@@ -51,7 +48,6 @@ export default function AdminDashboard() {
             value={2}
             icon="🏖️"
             color="warning"
-            className="group-hover:shadow-2xl group-hover:shadow-orange-500/25 group-hover:-translate-y-2 group-hover:border-orange-200 transition-all duration-300 h-full border border-gray-100 hover:border-orange-200 bg-white/80 backdrop-blur-sm"
           />
         </Link>
       </section>
