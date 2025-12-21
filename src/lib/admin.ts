@@ -19,9 +19,9 @@ export async function getAnnouncements() {
 
 export async function createAnnouncement(announcement: {
   title: string;
-  description: string;
-  valid_from?: string;
-  valid_until?: string;
+  content: string;
+  start_date?: string;
+  end_date?: string;
 }) {
   const { data, error } = await supabase
     .from('announcements')
@@ -36,10 +36,10 @@ export async function updateAnnouncement(
   id: string,
   announcement: Partial<{
     title: string;
-    description: string;
-    valid_from: string;
-    valid_until: string;
-  }>
+    content: string;
+    start_date: string;
+    end_date: string;
+  }>,
 ) {
   const { data, error } = await supabase
     .from('announcements')
@@ -61,7 +61,7 @@ export async function deleteAnnouncement(id: string) {
 }
 
 // ============================================================================
-// OPENING HOURS - FIXED für openinghours Tabelle
+// OPENING HOURS - openinghours Tabelle
 // ============================================================================
 
 export async function getOpeningHours() {
@@ -77,17 +77,46 @@ export async function getOpeningHours() {
   return data;
 }
 
+function normalizeTime(value?: string | null): string | null {
+  if (!value) return null;
+  if (/^\d{2}:\d{2}:\d{2}$/.test(value)) return value;
+  return `${value}:00`;
+}
+
 export async function updateOpeningHours(
   id: string,
   hours: {
     open_time?: string;
     close_time?: string;
     is_open?: boolean;
-  }
+  },
 ) {
+  const payload: {
+    morning_start?: string | null;
+    morning_end?: string | null;
+    is_closed?: boolean;
+  } = {};
+
+  if (typeof hours.is_open === 'boolean') {
+    // UI: is_open -> DB: is_closed
+    payload.is_closed = !hours.is_open;
+  }
+
+  if (hours.is_open === false) {
+    payload.morning_start = null;
+    payload.morning_end = null;
+  } else {
+    if (typeof hours.open_time !== 'undefined') {
+      payload.morning_start = normalizeTime(hours.open_time);
+    }
+    if (typeof hours.close_time !== 'undefined') {
+      payload.morning_end = normalizeTime(hours.close_time);
+    }
+  }
+
   const { data, error } = await supabase
     .from('openinghours')
-    .update(hours)
+    .update(payload)
     .eq('id', id)
     .select();
 
@@ -101,7 +130,7 @@ export async function updateOpeningHours(
 
 export async function getVacations() {
   const today = new Date().toISOString().split('T')[0];
-  
+
   const { data, error } = await supabase
     .from('vacations')
     .select('*')
@@ -118,7 +147,7 @@ export async function getVacations() {
 export async function createVacation(vacation: {
   start_date: string;
   end_date: string;
-  reason: string;
+  description: string;
 }) {
   const { data, error } = await supabase
     .from('vacations')
@@ -163,13 +192,13 @@ export async function getContactMessages(status?: string) {
 
 export async function updateContactMessageStatus(
   id: string,
-  status: 'new' | 'read' | 'answered' | 'archived'
+  status: 'new' | 'read' | 'answered' | 'archived',
 ) {
   const { data, error } = await supabase
     .from('contact_messages')
-    .update({ 
+    .update({
       status,
-      replied_at: status === 'answered' ? new Date().toISOString() : null 
+      replied_at: status === 'answered' ? new Date().toISOString() : null,
     })
     .eq('id', id)
     .select();

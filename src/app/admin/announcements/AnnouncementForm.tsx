@@ -10,16 +10,16 @@ interface AnnouncementFormProps {
 export function AnnouncementForm({ onSuccess }: AnnouncementFormProps) {
   const [formData, setFormData] = useState({
     title: '',
-    description: '',
-    valid_from: '',
-    valid_until: '',
+    content: '',
+    start_date: '',
+    end_date: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.title || !formData.description) {
+
+    if (!formData.title || !formData.content) {
       alert('Titel und Beschreibung sind erforderlich');
       return;
     }
@@ -27,7 +27,12 @@ export function AnnouncementForm({ onSuccess }: AnnouncementFormProps) {
     setIsSubmitting(true);
     try {
       await createAnnouncement(formData);
-      setFormData({ title: '', description: '', valid_from: '', valid_until: '' });
+      setFormData({
+        title: '',
+        content: '',
+        start_date: '',
+        end_date: '',
+      });
       onSuccess();
     } catch (error) {
       console.error('Create error:', error);
@@ -38,58 +43,74 @@ export function AnnouncementForm({ onSuccess }: AnnouncementFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className='announcement-form'>
-      <div className='form-group'>
-        <label htmlFor='title'>Titel *</label>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div>
+        <label htmlFor="title" className="form-label">
+          Titel *
+        </label>
         <input
-          type='text'
-          id='title'
+          type="text"
+          id="title"
           value={formData.title}
-          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-          className='form-input'
+          onChange={(e) =>
+            setFormData({ ...formData, title: e.target.value })
+          }
+          className="form-input w-full"
           required
         />
       </div>
 
-      <div className='form-group'>
-        <label htmlFor='description'>Beschreibung *</label>
+      <div>
+        <label htmlFor="content" className="form-label">
+          Beschreibung *
+        </label>
         <textarea
-          id='description'
-          value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          className='form-input'
+          id="content"
+          value={formData.content}
+          onChange={(e) =>
+            setFormData({ ...formData, content: e.target.value })
+          }
+          className="form-input w-full min-h-[120px]"
           rows={4}
           required
         />
       </div>
 
-      <div className='form-row'>
-        <div className='form-group'>
-          <label htmlFor='valid_from'>Gültig von (optional)</label>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label htmlFor="start_date" className="form-label">
+            Gültig von (optional)
+          </label>
           <input
-            type='date'
-            id='valid_from'
-            value={formData.valid_from}
-            onChange={(e) => setFormData({ ...formData, valid_from: e.target.value })}
-            className='form-input'
+            type="date"
+            id="start_date"
+            value={formData.start_date}
+            onChange={(e) =>
+              setFormData({ ...formData, start_date: e.target.value })
+            }
+            className="form-input w-full"
           />
         </div>
 
-        <div className='form-group'>
-          <label htmlFor='valid_until'>Gültig bis (optional)</label>
+        <div>
+          <label htmlFor="end_date" className="form-label">
+            Gültig bis (optional)
+          </label>
           <input
-            type='date'
-            id='valid_until'
-            value={formData.valid_until}
-            onChange={(e) => setFormData({ ...formData, valid_until: e.target.value })}
-            className='form-input'
+            type="date"
+            id="end_date"
+            value={formData.end_date}
+            onChange={(e) =>
+              setFormData({ ...formData, end_date: e.target.value })
+            }
+            className="form-input w-full"
           />
         </div>
       </div>
 
-      <button 
-        type='submit' 
-        className='btn-primary'
+      <button
+        type="submit"
+        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 text-white text-sm font-semibold shadow-md shadow-emerald-500/25 hover:shadow-lg hover:shadow-emerald-500/40 hover:-translate-y-0.5 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
         disabled={isSubmitting}
       >
         {isSubmitting ? 'Wird erstellt...' : '✅ Ankündigung erstellen'}

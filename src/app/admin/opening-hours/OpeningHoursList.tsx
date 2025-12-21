@@ -5,18 +5,30 @@ import { getOpeningHours, updateOpeningHours } from '@/lib/admin';
 
 interface OpeningHour {
   id: string;
-  open_time: string;
-  close_time: string;
-  is_open: boolean;
+  morning_start: string | null;
+  morning_end: string | null;
+  is_closed: boolean;
 }
 
-const DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
+const DAYS = [
+  'Montag',
+  'Dienstag',
+  'Mittwoch',
+  'Donnerstag',
+  'Freitag',
+  'Samstag',
+  'Sonntag',
+];
 
 export function OpeningHoursList() {
   const [hours, setHours] = useState<OpeningHour[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editData, setEditData] = useState({ open_time: '', close_time: '', is_open: true });
+  const [editData, setEditData] = useState({
+    open_time: '',
+    close_time: '',
+    is_open: true,
+  });
 
   useEffect(() => {
     loadHours();
@@ -32,9 +44,9 @@ export function OpeningHoursList() {
   const startEdit = (hour: OpeningHour) => {
     setEditingId(hour.id);
     setEditData({
-      open_time: hour.open_time || '',
-      close_time: hour.close_time || '',
-      is_open: hour.is_open,
+      open_time: hour.morning_start ? hour.morning_start.slice(0, 5) : '',
+      close_time: hour.morning_end ? hour.morning_end.slice(0, 5) : '',
+      is_open: !hour.is_closed,
     });
   };
 
@@ -45,7 +57,11 @@ export function OpeningHoursList() {
 
   const saveEdit = async (id: string) => {
     try {
-      await updateOpeningHours(id, editData);
+      await updateOpeningHours(id, {
+        open_time: editData.open_time,
+        close_time: editData.close_time,
+        is_open: editData.is_open,
+      });
       await loadHours();
       cancelEdit();
     } catch (error) {
@@ -55,86 +71,143 @@ export function OpeningHoursList() {
   };
 
   if (loading) {
-    return <div className='loading-spinner'>Lädt...</div>;
+    return <div className="text-sm text-gray-500">Lädt...</div>;
   }
 
   return (
-    <div className='hours-table-container'>
-      <table className='hours-table'>
-        <thead>
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      <table className="w-full border-collapse">
+        <thead className="bg-gray-50">
           <tr>
-            <th>Wochentag</th>
-            <th>Öffnungszeit</th>
-            <th>Schließungszeit</th>
-            <th>Status</th>
-            <th>Aktionen</th>
+            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Wochentag
+            </th>
+            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Öffnungszeit
+            </th>
+            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Schließungszeit
+            </th>
+            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Status
+            </th>
+            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Aktionen
+            </th>
           </tr>
         </thead>
         <tbody>
-          {hours.map((hour, index) => (
-            <tr key={hour.id} className={!hour.is_open ? 'closed-day' : ''}>
-              <td className='day-cell'>
-                <strong>{DAYS[index] || `Tag ${index + 1}`}</strong>
-              </td>
-              
-              {editingId === hour.id ? (
-                <>
-                  <td>
-                    <input
-                      type='time'
-                      value={editData.open_time}
-                      onChange={(e) => setEditData({ ...editData, open_time: e.target.value })}
-                      className='time-input'
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type='time'
-                      value={editData.close_time}
-                      onChange={(e) => setEditData({ ...editData, close_time: e.target.value })}
-                      className='time-input'
-                    />
-                  </td>
-                  <td>
-                    <label className='toggle-switch'>
+          {hours.map((hour, index) => {
+            const isClosed = hour.is_closed;
+
+            return (
+              <tr
+                key={hour.id}
+                className={`border-t border-gray-100 ${
+                  isClosed ? 'bg-gray-50/80' : 'bg-white'
+                }`}
+              >
+                <td className="px-4 py-3 text-sm font-medium text-gray-800">
+                  {DAYS[index] || `Tag ${index + 1}`}
+                </td>
+
+                {editingId === hour.id ? (
+                  <>
+                    <td className="px-4 py-3">
                       <input
-                        type='checkbox'
-                        checked={editData.is_open}
-                        onChange={(e) => setEditData({ ...editData, is_open: e.target.checked })}
+                        type="time"
+                        value={editData.open_time}
+                        onChange={(e) =>
+                          setEditData({
+                            ...editData,
+                            open_time: e.target.value,
+                          })
+                        }
+                        className="form-input w-full"
                       />
-                      <span className='toggle-slider'></span>
-                      {editData.is_open ? 'Geöffnet' : 'Geschlossen'}
-                    </label>
-                  </td>
-                  <td>
-                    <div className='action-buttons'>
-                      <button className='btn-save' onClick={() => saveEdit(hour.id)}>
-                        ✅ Speichern
+                    </td>
+                    <td className="px-4 py-3">
+                      <input
+                        type="time"
+                        value={editData.close_time}
+                        onChange={(e) =>
+                          setEditData({
+                            ...editData,
+                            close_time: e.target.value,
+                          })
+                        }
+                        className="form-input w-full"
+                      />
+                    </td>
+                    <td className="px-4 py-3">
+                      <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={editData.is_open}
+                          onChange={(e) =>
+                            setEditData({
+                              ...editData,
+                              is_open: e.target.checked,
+                            })
+                          }
+                          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span>
+                          {editData.is_open ? 'Geöffnet' : 'Geschlossen'}
+                        </span>
+                      </label>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-full bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
+                          onClick={() => saveEdit(hour.id)}
+                        >
+                          ✅ Speichern
+                        </button>
+                        <button
+                          className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                          onClick={cancelEdit}
+                        >
+                          ❌ Abbrechen
+                        </button>
+                      </div>
+                    </td>
+                  </>
+                ) : (
+                  <>
+                    <td className="px-4 py-3 text-sm text-gray-700">
+                      {hour.morning_start
+                        ? hour.morning_start.slice(0, 5)
+                        : '-'}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-700">
+                      {hour.morning_end ? hour.morning_end.slice(0, 5) : '-'}
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      <span
+                        className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold ${
+                          !hour.is_closed
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : 'bg-red-50 text-red-600'
+                        }`}
+                      >
+                        {!hour.is_closed ? '✅ Geöffnet' : '❌ Geschlossen'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      <button
+                        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-full bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
+                        onClick={() => startEdit(hour)}
+                      >
+                        ✏️ Bearbeiten
                       </button>
-                      <button className='btn-cancel' onClick={cancelEdit}>
-                        ❌ Abbrechen
-                      </button>
-                    </div>
-                  </td>
-                </>
-              ) : (
-                <>
-                  <td>{hour.open_time || '-'}</td>
-                  <td>{hour.close_time || '-'}</td>
-                  <td>
-                    <span className={`status-badge ${hour.is_open ? 'open' : 'closed'}`}>
-                      {hour.is_open ? '✅ Geöffnet' : '❌ Geschlossen'}
-                    </span>
-                  </td>
-                  <td>
-                    <button className='btn-edit-small' onClick={() => startEdit(hour)}>
-                      ✏️ Bearbeiten
-                    </button>
-                  </td>
-                </>
-              )}
-            </tr>
-          ))}
+                    </td>
+                  </>
+                )}
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
