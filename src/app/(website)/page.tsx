@@ -1,18 +1,26 @@
-export const revalidate = 3600; // Revalidiere nach 1 Stunde als Fallback
-
 import Link from 'next/link';
+import Image from 'next/image';
 import { getAnnouncements, getOpeningHours, getVacations } from '@/lib/admin';
 import BookingButton from '@/components/medatixx/BookingButton'; 
 import { GoogleReviews } from '@/components/GoogleReviews';
-import Image from 'next/image';
+
+// Cache für 1 Stunde (ISR)
+export const revalidate = 3600;
 
 // Daten-Abruf
 async function getHomeData() {
-  const [announcements, openingHours, vacations] = await Promise.all([
+  const [announcements, rawOpeningHours, vacations] = await Promise.all([
     getAnnouncements(),
     getOpeningHours(),
     getVacations(),
   ]);
+
+  // WICHTIG: Filtern und Sortieren der Öffnungszeiten
+  // Wir zeigen auf der Startseite nur Mo(1) bis Fr(5) an
+  const openingHours = rawOpeningHours
+    ?.filter((h: any) => h.day_of_week >= 1 && h.day_of_week <= 5)
+    .sort((a: any, b: any) => a.day_of_week - b.day_of_week);
+
   return { announcements, openingHours, vacations };
 }
 
@@ -20,11 +28,19 @@ export default async function HomePage() {
   const { announcements, openingHours, vacations } = await getHomeData();
   const medatixxId = process.env.NEXT_PUBLIC_MEDATIXX_UUID || '';
 
-  // Urlaubs-Check
+  // 🎯 FIX: Robuster Urlaubs-Check (Datum ohne Uhrzeit vergleichen)
   const today = new Date();
+  today.setHours(0, 0, 0, 0); // "Heute" auf Mitternacht setzen
+
   const currentVacation = vacations?.find((v: any) => {
+    // Startdatum auf Mitternacht setzen
     const start = new Date(v.start_date);
+    start.setHours(0, 0, 0, 0);
+    
+    // Enddatum auf Ende des Tages setzen (damit der letzte Tag noch zählt)
     const end = new Date(v.end_date);
+    end.setHours(23, 59, 59, 999);
+
     return today >= start && today <= end;
   });
 
@@ -79,7 +95,10 @@ export default async function HomePage() {
               <span className="text-xl">🏖️</span>
               <div>
                 <strong className="block font-semibold">Praxis geschlossen</strong>
-                <span className="text-sm">Vom {new Date(currentVacation.start_date).toLocaleDateString('de-DE')} bis {new Date(currentVacation.end_date).toLocaleDateString('de-DE')}. {currentVacation.reason}</span>
+                <span className="text-sm">
+                  Vom {new Date(currentVacation.start_date).toLocaleDateString('de-DE')} bis {new Date(currentVacation.end_date).toLocaleDateString('de-DE')}. 
+                  {currentVacation.description && ` Grund: ${currentVacation.description}`}
+                </span>
               </div>
             </div>
           </div>
@@ -95,7 +114,7 @@ export default async function HomePage() {
                 <span className="text-xl">📢</span>
                 <div>
                   <strong className="block font-semibold">{announcement.title}</strong>
-                  <span className="text-sm text-blue-800">{announcement.description}</span>
+                  <span className="text-sm text-blue-800">{announcement.content}</span>
                 </div>
               </div>
             ))}
@@ -135,14 +154,38 @@ export default async function HomePage() {
               <h3 className="text-xl font-bold text-gray-900 mb-4">Öffnungszeiten</h3>
               <div className="space-y-3 w-full">
                 {openingHours && openingHours.length > 0 ? (
-                  openingHours.slice(0, 5).map((hour: any, index: number) => {
-                    const days = ['Mo', 'Di', 'Mi', 'Do', 'Fr'];
+                  openingHours.map((hour: any) => {
+                    // Mapping Array für Wochentage (Index 0 = Sonntag, wird hier aber nicht genutzt wegen Filter)
+                    const days = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+                    const dayLabel = days[hour.day_of_week] || 'Tag';
+                    
+                    // Format Helper
+                    const fmt = (t: string) => t ? t.slice(0, 5) : '';
+
                     return (
-                      <div key={hour.id} className="flex justify-between items-center text-sm border-b border-gray-50 pb-2 last:border-0 last:pb-0">
-                        <span className="font-medium text-gray-500 w-8">{days[index]}</span>
-                        <span className={`font-medium ${hour.is_open ? 'text-gray-900' : 'text-gray-400'}`}>
-                          {hour.is_open ? `${hour.open_time || '-'} - ${hour.close_time || '-'}` : 'Geschlossen'}
-                        </span>
+                      <div key={hour.id} className="flex justify-between items-start text-sm border-b border-gray-50 pb-2 last:border-0 last:pb-0">
+                        <span className="font-medium text-gray-500 w-8 mt-0.5">{dayLabel}</span>
+                        <div className="text-right">
+                          {hour.is_closed ? (
+                            <span className="text-gray-400">Geschlossen</span>
+                          ) : (
+                            <div className="flex flex-col items-end gap-0.5">
+                              {hour.morning_start && (
+                                <span className="text-gray-900 font-medium">
+                                  {fmt(hour.morning_start)} - {fmt(hour.morning_end)}
+                                </span>
+                              )}
+                              {hour.afternoon_start && (
+                                <span className="text-gray-900 font-medium">
+                                  {fmt(hour.afternoon_start)} - {fmt(hour.afternoon_end)}
+                                </span>
+                              )}
+                              {!hour.morning_start && !hour.afternoon_start && (
+                                <span>Geöffnet</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     );
                   })
