@@ -1,5 +1,4 @@
-﻿// app/admin/page.tsx
-import Link from 'next/link';
+﻿import Link from 'next/link';
 import { StatCard } from './components/StatCard';
 
 export default function AdminDashboard() {
@@ -14,20 +13,15 @@ export default function AdminDashboard() {
         </p>
       </header>
 
-      <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8">
-        <Link href="/admin/contact-messages" className="group">
-          <StatCard
-            title="Neue Nachrichten"
-            value={12}
-            icon="📧"
-            color="primary"
-          />
-        </Link>
+      {/* Grid angepasst auf 3 Spalten, da Nachrichten entfernt wurden */}
+      <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+        
+        {/* Kontakt-Nachrichten entfernt (siehe Tech-Spec: Keine Speicherung) */}
 
         <Link href="/admin/announcements" className="group">
           <StatCard
             title="Ankündigungen"
-            value={3}
+            value={3} // Dies sollte idealerweise dynamisch geladen werden
             icon="📢"
             color="accent"
           />

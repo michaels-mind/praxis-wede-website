@@ -1,15 +1,13 @@
-// src/app/admin/layout.tsx
 import type { ReactNode } from 'react';
 import Link from 'next/link';
-import '../globals.css';
+// import '../globals.css'; // Nicht nötig, kommt vom Root Layout
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="de" className="scroll-smooth">
-    <body className="min-h-screen bg-gradient-to-br from-white via-gray-50/50 to-blue-50/30 font-sans text-gray-900 antialiased">
-      <div className="flex min-h-screen">
+    // WICHTIG: Kein <html> oder <body> hier! Nur ein div als Wrapper.
+    <div className="flex min-h-screen bg-gray-50/30">
         {/* Sidebar */}
-        <aside className="hidden lg:flex lg:flex-col lg:w-64 bg-white/95 backdrop-blur-md border-r border-blue-50/50 shadow-lg">
+        <aside className="hidden lg:flex lg:flex-col lg:w-64 bg-white/95 backdrop-blur-md border-r border-blue-50/50 shadow-lg fixed h-full z-10">
           <div className="p-6 border-b border-blue-50">
             <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 bg-clip-text text-transparent">
               Admin-Panel
@@ -21,21 +19,14 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
           <nav className="mt-6 px-4 space-y-2">
             <NavItem href="/admin" icon="📊" label="Dashboard" />
-            <NavItem href="/admin/contact-messages" icon="📧" label="Nachrichten" />
             <NavItem href="/admin/announcements" icon="📢" label="Ankündigungen" />
             <NavItem href="/admin/opening-hours" icon="🕒" label="Öffnungszeiten" />
             <NavItem href="/admin/vacations" icon="🏖️" label="Urlaube" />
-
-            <hr className="my-4 border-blue-50" />
-
-            <NavItem href="/admin/patients" icon="👥" label="Patienten" />
-            <NavItem href="/admin/documents" icon="📄" label="Dokumente" />
-            <NavItem href="/admin/content" icon="✏️" label="Inhalte" />
           </nav>
         </aside>
 
-        {/* Hauptbereich */}
-        <div className="flex-1 flex flex-col">
+        {/* Hauptbereich - margin-left für Sidebar Platzhalter */}
+        <div className="flex-1 flex flex-col lg:ml-64">
           {/* Header oben */}
           <header className="sticky top-0 z-40 flex items-center justify-between px-4 md:px-8 py-3 border-b border-blue-50/70 bg-white/90 backdrop-blur-md">
             <div className="flex items-center gap-3 text-sm text-gray-600">
@@ -44,7 +35,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               <span className="hidden sm:inline">Praxis Andreas Wede</span>
             </div>
             <div className="flex items-center gap-3">
-              {/* Zurück zum Dashboard – auf Dashboard selbst verstecken die Pages einfach */}
               <Link
                 href="/admin"
                 className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100 hover:bg-blue-100 hover:shadow-sm transition-all"
@@ -66,13 +56,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             <div className="max-w-7xl mx-auto">{children}</div>
           </main>
         </div>
-      </div>
-    </body>
-    </html>
+    </div>
   );
 }
 
-/* Kleinere Nav-Komponente im gleichen File */
 function NavItem({
   href,
   icon,

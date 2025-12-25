@@ -1,83 +1,89 @@
-import { revalidatePath } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// 1. Harter Reset: Keine Imports aus anderen Dateien.
+// Wir definieren den Client direkt hier, um JEDEN Import-Fehler auszuschließen.
+const setupSupabase = () => {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    console.error('❌ FATAL: Credentials fehlen in .env.local');
+    throw new Error('Server-Konfiguration fehlt (Credentials).');
+  }
+
+  return createClient(supabaseUrl, supabaseKey, {
+    auth: {
+      persistSession: false, // Wichtig für Serverless
+      autoRefreshToken: false,
+    },
+  });
+};
 
 export async function GET() {
+  console.log('🔄 GET /api/admin/opening-hours gestartet...');
   try {
+    const supabase = setupSupabase();
+    
     const { data, error } = await supabase
-      .from('openinghours')
+      .from('opening_hours')
       .select('*')
-      .order('id', { ascending: true });
+      .order('day_of_week', { ascending: true });
 
-    if (error) throw error;
-    return Response.json({ success: true, data });
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return Response.json({ error: message }, { status: 500 });
-  }
-}
 
-export async function POST(request: Request) {
-  try {
-    const body = await request.json();
+    if (error) {
+      console.error('❌ Supabase DB Error:', error.message);
+      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    }
 
-    const { data, error } = await supabase
-      .from('openinghours')
-      .insert([body]);
+    console.log(`✅ GET erfolgreich: ${data?.length} Einträge geladen.`);
+    return NextResponse.json({ success: true, data: data || [] });
 
-    if (error) throw error;
-
-    revalidatePath('/');
-
-    return Response.json({ success: true, data });
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return Response.json({ error: message }, { status: 500 });
+  } catch (err: any) {
+    console.error('❌ CRASH in GET Route:', err.message);
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }
 
 export async function PUT(request: Request) {
+  console.log('🔄 PUT /api/admin/opening-hours gestartet...');
   try {
+    const supabase = setupSupabase();
     const body = await request.json();
+    
+    console.log('📦 Empfangene Daten:', body);
+
     const { id, ...updates } = body;
 
+    // Helper: Leere Strings ("") zu null machen, sonst knallt Postgres bei TIME-Feldern
+    const cleanTime = (t: any) => (t === '' || t === undefined ? null : t);
+
+    const cleanData = {
+      ...updates,
+      morning_start: cleanTime(updates.morning_start),
+      morning_end: cleanTime(updates.morning_end),
+      afternoon_start: cleanTime(updates.afternoon_start),
+      afternoon_end: cleanTime(updates.afternoon_end),
+    };
+
+    console.log('🧹 Bereinigte Daten für DB:', cleanData);
+
     const { data, error } = await supabase
-      .from('openinghours')
-      .update(updates)
+      .from('opening_hours')
+      .update(cleanData)
       .eq('id', id)
       .select();
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Supabase UPDATE Error:', error.message);
+      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    }
 
-    revalidatePath('/');
+    console.log('✅ Update erfolgreich.');
+    return NextResponse.json({ success: true, data });
 
-    return Response.json({ success: true, data });
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return Response.json({ error: message }, { status: 500 });
-  }
-}
-
-export async function DELETE(request: Request) {
-  try {
-    const { id } = await request.json();
-
-    const { error } = await supabase
-      .from('openinghours')
-      .delete()
-      .eq('id', id);
-
-    if (error) throw error;
-
-    revalidatePath('/');
-
-    return Response.json({ success: true });
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return Response.json({ error: message }, { status: 500 });
+  } catch (err: any) {
+    console.error('❌ CRASH in PUT Route:', err.message);
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }

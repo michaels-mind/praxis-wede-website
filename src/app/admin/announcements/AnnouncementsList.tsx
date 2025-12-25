@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react';
 
+// 🎯 KORREKTUR: Interface an DB angepasst
 interface Announcement {
   id: string;
   title: string;
-  description: string;
-  valid_from?: string;
-  valid_until?: string;
+  content: string; // DB Feld heißt content
+  start_date?: string; // DB Feld heißt start_date
+  end_date?: string;   // DB Feld heißt end_date
   created_at: string;
 }
 
@@ -22,7 +23,6 @@ export function AnnouncementsList() {
   const loadAnnouncements = async () => {
     setLoading(true);
     try {
-      // 🎯 WICHTIG: Rufe die API-Route auf statt lib/admin direkt
       const response = await fetch('/api/admin/announcements');
       const result = await response.json();
       setAnnouncements(result.data || []);
@@ -38,7 +38,6 @@ export function AnnouncementsList() {
     if (!confirm('Ankündigung wirklich löschen?')) return;
 
     try {
-      // 🎯 WICHTIG: Rufe die API-Route auf statt lib/admin direkt
       const response = await fetch('/api/admin/announcements', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
@@ -49,8 +48,9 @@ export function AnnouncementsList() {
         throw new Error('Fehler beim Löschen');
       }
 
-      alert('✅ Ankündigung gelöscht! Die Website wird aktualisiert...');
-      await loadAnnouncements();
+      // UI-Optimierung: Liste lokal filtern statt neu zu laden (schneller)
+      setAnnouncements((prev) => prev.filter((a) => a.id !== id));
+      alert('✅ Ankündigung gelöscht!');
     } catch (error) {
       console.error('Delete error:', error);
       alert('❌ Fehler beim Löschen');
@@ -58,14 +58,14 @@ export function AnnouncementsList() {
   };
 
   if (loading) {
-    return <div className="text-sm text-gray-500">Lädt...</div>;
+    return <div className="text-sm text-gray-500 p-4 text-center">Lädt Ankündigungen...</div>;
   }
 
   if (announcements.length === 0) {
     return (
-      <p className="text-sm text-gray-500 italic">
-        Keine Ankündigungen vorhanden.
-      </p>
+      <div className="text-center p-8 bg-gray-50 rounded-xl border border-dashed border-gray-300">
+        <p className="text-gray-500">Keine Ankündigungen vorhanden.</p>
+      </div>
     );
   }
 
@@ -74,58 +74,51 @@ export function AnnouncementsList() {
       {announcements.map((announcement) => (
         <article
           key={announcement.id}
-          className="card bg-white/90 border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow flex flex-col"
+          className="card bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 flex flex-col h-full"
         >
-          <div className="flex items-start justify-between gap-3 mb-3">
-            <h3 className="text-sm font-semibold text-gray-900">
-              {announcement.title}
-            </h3>
-            <div className="flex items-center gap-2 text-xs text-gray-500">
-              <span>
-                Erstellt:{' '}
+          <div className="p-5 flex flex-col h-full">
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <h3 className="text-base font-bold text-gray-900 line-clamp-2">
+                {announcement.title}
+              </h3>
+              <span className="text-xs text-gray-400 whitespace-nowrap bg-gray-50 px-2 py-1 rounded">
                 {new Date(announcement.created_at).toLocaleDateString('de-DE')}
               </span>
             </div>
-          </div>
 
-          <p className="text-sm text-gray-800 mb-4">
-            {announcement.description}
-          </p>
+            <p className="text-sm text-gray-600 mb-6 flex-grow line-clamp-3">
+              {announcement.content} {/* 🎯 Nutzung von content */}
+            </p>
 
-          {(announcement.valid_from || announcement.valid_until) && (
-            <div className="mb-4 text-xs text-gray-600 space-x-1">
-              {announcement.valid_from && (
-                <span>
-                  Gültig ab:{' '}
-                  {new Date(announcement.valid_from).toLocaleDateString(
-                    'de-DE',
-                  )}
-                </span>
-              )}
-              {announcement.valid_until && (
-                <span>
-                  · Gültig bis:{' '}
-                  {new Date(announcement.valid_until).toLocaleDateString(
-                    'de-DE',
-                  )}
-                </span>
-              )}
+            {(announcement.start_date || announcement.end_date) && (
+              <div className="mb-5 text-xs text-blue-600 bg-blue-50 p-2 rounded-lg flex flex-col gap-1">
+                {announcement.start_date && (
+                  <span>
+                    📅 Von: {new Date(announcement.start_date).toLocaleDateString('de-DE')}
+                  </span>
+                )}
+                {announcement.end_date && (
+                  <span>
+                    ⏳ Bis: {new Date(announcement.end_date).toLocaleDateString('de-DE')}
+                  </span>
+                )}
+              </div>
+            )}
+
+            <div className="mt-auto pt-4 border-t border-gray-50 flex justify-between items-center">
+              <button
+                className="text-xs font-medium text-gray-500 hover:text-gray-900 px-2 py-1 rounded hover:bg-gray-100 transition-colors"
+                onClick={() => alert('Bearbeiten folgt in Kürze')}
+              >
+                ✏️ Bearbeiten
+              </button>
+              <button
+                className="text-xs font-medium text-red-600 hover:text-red-700 px-3 py-1.5 rounded-full hover:bg-red-50 transition-colors bg-white border border-red-100"
+                onClick={() => handleDelete(announcement.id)}
+              >
+                🗑️ Löschen
+              </button>
             </div>
-          )}
-
-          <div className="mt-auto flex flex-wrap gap-2">
-            <button
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-full bg-gray-100 text-gray-700 cursor-not-allowed"
-              onClick={() => alert('Bearbeiten-Funktion folgt später')}
-            >
-              ✏️ Bearbeiten
-            </button>
-            <button
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-full bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
-              onClick={() => handleDelete(announcement.id)}
-            >
-              🗑️ Löschen
-            </button>
           </div>
         </article>
       ))}

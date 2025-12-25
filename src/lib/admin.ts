@@ -8,7 +8,7 @@ export async function getAnnouncements() {
   const { data, error } = await supabase
     .from('announcements')
     .select('*')
-    .eq('is_active', true) // 🎯 WICHTIG: Nur aktive Ankündigungen
+    .eq('is_active', true) 
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -20,9 +20,9 @@ export async function getAnnouncements() {
 
 export async function createAnnouncement(announcement: {
   title: string;
-  description: string; // 🎯 GEÄNDERT: content -> description
-  valid_from?: string | null; // 🎯 GEÄNDERT: start_date -> valid_from
-  valid_until?: string | null; // 🎯 GEÄNDERT: end_date -> valid_until
+  description: string; 
+  start_date?: string | null; // Angepasst an DB & Types
+  end_date?: string | null;   // Angepasst an DB & Types
   is_active?: boolean;
 }) {
   const { data, error } = await supabase
@@ -30,9 +30,9 @@ export async function createAnnouncement(announcement: {
     .insert([
       {
         title: announcement.title,
-        description: announcement.description,
-        valid_from: announcement.valid_from || null,
-        valid_until: announcement.valid_until || null,
+        content: announcement.description, // DB nutzt "content" (laut TechSpecs/SQL) oder "description"? Wir haben in SQL "content" als Hauptfeld definiert.
+        start_date: announcement.start_date || new Date().toISOString(),
+        end_date: announcement.end_date || new Date().toISOString(),
         is_active: announcement.is_active ?? true,
       },
     ])
@@ -46,20 +46,19 @@ export async function updateAnnouncement(
   id: string,
   announcement: Partial<{
     title: string;
-    description: string; // 🎯 GEÄNDERT: content -> description
-    valid_from: string;
-    valid_until: string;
+    description: string;
+    start_date: string;
+    end_date: string;
     is_active: boolean;
   }>,
 ) {
   const payload: any = {};
 
   if (announcement.title) payload.title = announcement.title;
-  if (announcement.description) payload.description = announcement.description;
-  if (announcement.valid_from !== undefined)
-    payload.valid_from = announcement.valid_from;
-  if (announcement.valid_until !== undefined)
-    payload.valid_until = announcement.valid_until;
+  // Mapping description -> content für DB
+  if (announcement.description) payload.content = announcement.description;
+  if (announcement.start_date !== undefined) payload.start_date = announcement.start_date;
+  if (announcement.end_date !== undefined) payload.end_date = announcement.end_date;
   if (announcement.is_active !== undefined) payload.is_active = announcement.is_active;
 
   const { data, error } = await supabase
@@ -79,14 +78,14 @@ export async function deleteAnnouncement(id: string) {
 }
 
 // ============================================================================
-// OPENING HOURS - openinghours Tabelle
+// OPENING HOURS - opening_hours Tabelle
 // ============================================================================
 
 export async function getOpeningHours() {
   const { data, error } = await supabase
-    .from('openinghours')
+    .from('opening_hours') // KORRIGIERT: opening_hours
     .select('*')
-    .order('id', { ascending: true });
+    .order('day_of_week', { ascending: true }); // KORRIGIERT: Sortierung nach Wochentag (0=So, 1=Mo...)
 
   if (error) {
     console.error('Error fetching opening hours:', error);
@@ -133,7 +132,7 @@ export async function updateOpeningHours(
   }
 
   const { data, error } = await supabase
-    .from('openinghours')
+    .from('opening_hours') // KORRIGIERT
     .update(payload)
     .eq('id', id)
     .select();
@@ -165,11 +164,15 @@ export async function getVacations() {
 export async function createVacation(vacation: {
   start_date: string;
   end_date: string;
-  reason: string; // 🎯 HINWEIS: Du verwendest "reason" in der HomePage
+  reason: string; 
 }) {
   const { data, error } = await supabase
     .from('vacations')
-    .insert([vacation])
+    .insert([{
+      start_date: vacation.start_date,
+      end_date: vacation.end_date,
+      description: vacation.reason // Mapping: UI nutzt "reason", DB "description"
+    }])
     .select();
 
   if (error) throw error;
@@ -196,7 +199,9 @@ export async function getContactMessages(status?: string) {
     .order('created_at', { ascending: false });
 
   if (status) {
-    query = query.eq('status', status);
+    // Falls das Feld "is_read" Boolean ist, müssen wir mappen
+    if (status === 'new') query = query.eq('is_read', false);
+    if (status === 'read') query = query.eq('is_read', true);
   }
 
   const { data, error } = await query;
@@ -212,12 +217,16 @@ export async function updateContactMessageStatus(
   id: string,
   status: 'new' | 'read' | 'answered' | 'archived',
 ) {
+  // DB hat nur "is_read" und "archived_at". Mapping nötig.
+  const payload: any = {};
+  
+  if (status === 'read') payload.is_read = true;
+  if (status === 'new') payload.is_read = false;
+  if (status === 'archived') payload.archived_at = new Date().toISOString();
+
   const { data, error } = await supabase
     .from('contact_messages')
-    .update({
-      status,
-      replied_at: status === 'answered' ? new Date().toISOString() : null,
-    })
+    .update(payload)
     .eq('id', id)
     .select();
 

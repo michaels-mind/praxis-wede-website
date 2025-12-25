@@ -2,16 +2,17 @@
 
 import { useState, useEffect } from 'react';
 
-interface Vacation {
+// 🎯 KORREKTUR: Interface exakt an Tabelle 'vacations' angepasst
+interface VacationAnnouncement {
   id: string;
-  start_date: string;
-  end_date: string;
-  reason: string;
+  start_date: string; // war valid_from
+  end_date: string;   // war valid_until
+  description: string;
   created_at: string;
 }
 
 export function VacationsList() {
-  const [vacations, setVacations] = useState<Vacation[]>([]);
+  const [vacations, setVacations] = useState<VacationAnnouncement[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,127 +22,76 @@ export function VacationsList() {
   const loadVacations = async () => {
     setLoading(true);
     try {
-      // 🎯 WICHTIG: Rufe die API-Route auf statt lib/admin direkt
-      const response = await fetch('/api/admin/vacations');
+      const response = await fetch('/api/admin/vacations', { cache: 'no-store' });
       const result = await response.json();
-      setVacations(result.data || []);
+      
+      if (result.success && Array.isArray(result.data)) {
+        setVacations(result.data);
+      } else {
+        setVacations([]);
+      }
     } catch (error) {
       console.error('Load error:', error);
-      setVacations([]);
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Urlaub wirklich löschen?')) return;
-
+    if (!confirm('Wirklich löschen?')) return;
+    
     try {
-      // 🎯 WICHTIG: Rufe die API-Route auf statt lib/admin direkt
       const response = await fetch('/api/admin/vacations', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id }),
       });
 
-      if (!response.ok) {
-        throw new Error('Fehler beim Löschen');
+      if (response.ok) {
+        // UI-Optimierung: Liste filtern statt neu laden
+        setVacations(prev => prev.filter(v => v.id !== id));
+      } else {
+        alert('Fehler beim Löschen');
       }
-
-      alert('✅ Urlaub gelöscht! Die Website wird aktualisiert...');
-      await loadVacations();
-    } catch (error) {
-      console.error('Delete error:', error);
-      alert('❌ Fehler beim Löschen');
+    } catch (e) {
+      alert('Fehler beim Löschen');
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('de-DE', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
-  };
+  if (loading) return <div className="text-sm text-gray-500 p-4 text-center">Lädt Urlaube...</div>;
 
-  const getDaysBetween = (start: string, end: string) => {
-    const startDate = new Date(start);
-    const endDate = new Date(end);
-    const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    return diffDays;
-  };
-
-  if (loading) {
-    return <div className="text-sm text-gray-500">Lädt...</div>;
-  }
-
-  if (vacations.length === 0) {
-    return (
-      <p className="text-sm text-gray-500 italic">
-        Aktuell sind keine Urlaube hinterlegt.
-      </p>
-    );
-  }
+  if (vacations.length === 0) return (
+    <div className="text-center p-8 bg-gray-50 rounded-xl border border-dashed border-gray-300">
+      <p className="text-gray-500 italic text-sm">Keine Urlaube eingetragen.</p>
+    </div>
+  );
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-      {vacations.map((vacation) => {
-        const days = getDaysBetween(vacation.start_date, vacation.end_date);
-        const now = new Date();
-        const isUpcoming = new Date(vacation.start_date) > now;
-        const isCurrent =
-          now >= new Date(vacation.start_date) &&
-          now <= new Date(vacation.end_date);
-
-        return (
-          <article
-            key={vacation.id}
-            className={`card vacation-card relative ${
-              isCurrent ? 'border-red-200 bg-red-50/40' : ''
-            } ${isUpcoming ? 'border-amber-100 bg-amber-50/40' : ''}`}
-          >
-            <div className="flex items-start justify-between gap-3 mb-3">
-              <div className="flex items-center gap-2 text-sm text-gray-700">
-                <span className="px-2 py-1 rounded-full bg-white border border-gray-200 text-xs">
-                  📅 {formatDate(vacation.start_date)}
-                </span>
-                <span className="text-gray-400 text-xs">bis</span>
-                <span className="px-2 py-1 rounded-full bg-white border border-gray-200 text-xs">
-                  📅 {formatDate(vacation.end_date)}
-                </span>
+    <div className="grid gap-4 md:grid-cols-2">
+      {vacations.map((vac) => (
+        <div key={vac.id} className="p-4 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex justify-between items-start mb-2">
+            <div>
+              <span className="block text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Zeitraum</span>
+              <div className="text-sm font-medium text-gray-900 bg-blue-50 inline-block px-2 py-1 rounded">
+                {new Date(vac.start_date).toLocaleDateString('de-DE')} 
+                <span className="mx-1 text-gray-400">bis</span> 
+                {new Date(vac.end_date).toLocaleDateString('de-DE')}
               </div>
-              <span className="px-2 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-medium">
-                {days} {days === 1 ? 'Tag' : 'Tage'}
-              </span>
             </div>
-
-            {isCurrent && (
-              <div className="mb-2 text-xs font-semibold text-red-700">
-                🔴 Aktuell geschlossen
-              </div>
-            )}
-
-            {isUpcoming && !isCurrent && (
-              <div className="mb-2 text-xs font-semibold text-amber-700">
-                ⏳ Bevorstehender Urlaub
-              </div>
-            )}
-
-            <p className="text-sm text-gray-800 mb-4">
-              <span className="font-semibold">Grund:</span> {vacation.reason}
-            </p>
-
-            <button
-              type="button"
-              className="text-xs font-medium text-red-600 hover:text-red-700 hover:underline"
-              onClick={() => handleDelete(vacation.id)}
+            <button 
+              onClick={() => handleDelete(vac.id)}
+              className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-full transition-colors"
+              title="Löschen"
             >
-              🗑️ Urlaub löschen
+              🗑️
             </button>
-          </article>
-        );
-      })}
+          </div>
+          <div className="mt-3 pt-3 border-t border-gray-100">
+            <p className="text-sm text-gray-700 font-medium">{vac.description}</p>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

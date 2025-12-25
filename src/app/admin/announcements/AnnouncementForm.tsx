@@ -9,7 +9,7 @@ interface AnnouncementFormProps {
 export function AnnouncementForm({ onSuccess }: AnnouncementFormProps) {
   const [formData, setFormData] = useState({
     title: '',
-    description: '', // ✅ WICHTIG: description statt content
+    content: '', // 🎯 KORREKTUR: content (passend zur DB)
     valid_from: '',
     valid_until: '',
   });
@@ -18,22 +18,21 @@ export function AnnouncementForm({ onSuccess }: AnnouncementFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.title || !formData.description) {
+    if (!formData.title || !formData.content) {
       alert('Titel und Beschreibung sind erforderlich');
       return;
     }
 
     setIsSubmitting(true);
     try {
-      // ✅ WICHTIG: Rufe die API-Route auf statt lib/admin direkt
       const response = await fetch('/api/admin/announcements', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: formData.title,
-          description: formData.description,
-          valid_from: formData.valid_from || null,
-          valid_until: formData.valid_until || null,
+          content: formData.content, // 🎯 DB erwartet "content"
+          start_date: formData.valid_from || new Date().toISOString(), // DB erwartet start_date
+          end_date: formData.valid_until || new Date().toISOString(),   // DB erwartet end_date
           is_active: true,
         }),
       });
@@ -44,7 +43,7 @@ export function AnnouncementForm({ onSuccess }: AnnouncementFormProps) {
 
       setFormData({
         title: '',
-        description: '',
+        content: '',
         valid_from: '',
         valid_until: '',
       });
@@ -74,22 +73,24 @@ export function AnnouncementForm({ onSuccess }: AnnouncementFormProps) {
           }
           className="form-input w-full"
           required
+          placeholder="z.B. Grippeschutzimpfung verfügbar"
         />
       </div>
 
       <div>
-        <label htmlFor="description" className="form-label">
-          Beschreibung *
+        <label htmlFor="content" className="form-label">
+          Inhalt *
         </label>
         <textarea
-          id="description"
-          value={formData.description}
+          id="content"
+          value={formData.content}
           onChange={(e) =>
-            setFormData({ ...formData, description: e.target.value })
+            setFormData({ ...formData, content: e.target.value })
           }
           className="form-input w-full min-h-[120px]"
           rows={4}
           required
+          placeholder="Geben Sie hier die Details der Ankündigung ein..."
         />
       </div>
 

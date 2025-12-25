@@ -1,70 +1,48 @@
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { createServiceClient } from '@/lib/supabase/server';
 
 export async function GET() {
   try {
+    const supabase = createServiceClient();
+    
+    // Einfach alle Announcements laden (es sind per Definition nur News)
     const { data, error } = await supabase
       .from('announcements')
       .select('*')
-      .eq('is_active', true)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return Response.json({ success: true, data });
+
+    return Response.json({ success: true, data: data || [] });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    return Response.json({ error: message }, { status: 500 });
+    return Response.json({ success: false, error: message }, { status: 500 });
   }
 }
 
 export async function POST(request: Request) {
   try {
+    const supabase = createServiceClient();
     const body = await request.json();
 
     const { data, error } = await supabase
       .from('announcements')
-      .insert([body]);
-
-    if (error) throw error;
-
-    revalidatePath('/');
-
-    return Response.json({ success: true, data });
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return Response.json({ error: message }, { status: 500 });
-  }
-}
-
-export async function PUT(request: Request) {
-  try {
-    const body = await request.json();
-    const { id, ...updates } = body;
-
-    const { data, error } = await supabase
-      .from('announcements')
-      .update(updates)
-      .eq('id', id)
+      .insert([body])
       .select();
 
     if (error) throw error;
 
     revalidatePath('/');
-
     return Response.json({ success: true, data });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    return Response.json({ error: message }, { status: 500 });
+    return Response.json({ success: false, error: message }, { status: 500 });
   }
 }
 
 export async function DELETE(request: Request) {
   try {
+    const supabase = createServiceClient();
     const { id } = await request.json();
 
     const { error } = await supabase
@@ -75,10 +53,9 @@ export async function DELETE(request: Request) {
     if (error) throw error;
 
     revalidatePath('/');
-
     return Response.json({ success: true });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    return Response.json({ error: message }, { status: 500 });
+    return Response.json({ success: false, error: message }, { status: 500 });
   }
 }
