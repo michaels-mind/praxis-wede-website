@@ -10,9 +10,9 @@ export function middleware(request: NextRequest) {
   if (pathname.startsWith('/admin')) {
     const authToken = request.cookies.get('admin_auth')?.value;
 
-    // Kein Token oder falsches Token → Redirect zu /login
+    // Kein Token oder falsches Token → Redirect zu /admin/login
     if (!authToken || authToken !== ADMIN_PASSWORD) {
-      return NextResponse.redirect(new URL('/login', request.url));
+      return NextResponse.redirect(new URL('/admin/login', request.url));
     }
   }
 
